@@ -12,10 +12,10 @@ class WishItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = WishItem
         fields = [
-            'id', 'nickname', 'title', 'price', 'category',
+            'id', 'title', 'price', 'category',
             'status', 'status_display', 'created_at', 'cooling_end_date', 'days_left'
         ]
-        read_only_fields = ['id', 'status', 'created_at', 'cooling_end_date']
+        read_only_fields = ['id', 'status', 'created_at', 'cooling_end_date','days_left']
 
     def get_days_left(self, obj):
         from django.utils import timezone

@@ -12,5 +12,7 @@ urlpatterns = [
 
     path('api/users/', include('users.urls')),
 
+    path('api/wishes/', include('wishes.urls')),
+
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
 ]

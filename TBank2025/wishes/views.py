@@ -5,11 +5,10 @@ from drf_spectacular.utils import extend_schema
 from .models import WishItem
 from users.models import UserProfile
 from .serializers import WishItemSerializer
-from .services import calculate_cooling_date
+from .services import calculate_cooling_data
 
 
 class WishListCreateView(APIView):
-
     @extend_schema(
         parameters=[
             {'name': 'nickname', 'in': 'query', 'description': 'Никнейм пользователя', 'required': True,
@@ -30,7 +29,7 @@ class WishListCreateView(APIView):
     @extend_schema(
         request=WishItemSerializer,
         responses={201: WishItemSerializer},
-        summary="Добавить желание и запустить таймер"
+        summary="Добавить желание и рассчитать сложный срок"
     )
     def post(self, request):
         serializer = WishItemSerializer(data=request.data)
@@ -43,11 +42,14 @@ class WishListCreateView(APIView):
             except UserProfile.DoesNotExist:
                 return Response({"error": "User not found"}, status=404)
 
-            # ЗАГЛУШКА!
-            end_date, days = calculate_cooling_date(price, user)
+            end_date, final_days, details, notifications = calculate_cooling_data(price, user)
 
             wish = serializer.save(cooling_end_date=end_date)
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            response_data = serializer.data
+            response_data['calculation_info'] = details
+            response_data['notification_plan'] = notifications
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

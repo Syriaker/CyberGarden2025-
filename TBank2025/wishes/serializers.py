@@ -5,7 +5,6 @@ from users.models import UserProfile
 
 class WishItemSerializer(serializers.ModelSerializer):
 
-    nickname = serializers.CharField(write_only=True)
     days_left = serializers.SerializerMethodField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
 
@@ -23,13 +22,3 @@ class WishItemSerializer(serializers.ModelSerializer):
             return 0
         delta = obj.cooling_end_date - timezone.now()
         return max(delta.days, 0)
-
-    def create(self, validated_data):
-        nickname = validated_data.pop('nickname')
-        try:
-            user = UserProfile.objects.get(nickname=nickname)
-        except UserProfile.DoesNotExist:
-            raise serializers.ValidationError({"nickname": "Пользователь не найден. Сначала создайте профиль."})
-
-        wish = WishItem.objects.create(user=user, **validated_data)
-        return wish

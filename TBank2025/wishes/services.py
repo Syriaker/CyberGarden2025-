@@ -18,13 +18,16 @@ def calculate_cooling_data(price: Decimal, user_profile):
     current_savings = user_profile.current_savings
     monthly_savings = user_profile.monthly_savings
 
+    safety_buffer = current_savings * Decimal(0.5)  # 50%
+    available_cash = current_savings - safety_buffer
+
+    if available_cash < 0:
+        available_cash = Decimal(0)
+
     if monthly_savings <= 0:
         t_dynamic = 0
     else:
         daily_savings = monthly_savings / Decimal(30)
-        safety_buffer = current_savings * Decimal(0.5)
-
-        available_cash = current_savings - safety_buffer
 
         if available_cash >= price:
             t_dynamic = 0
@@ -32,14 +35,12 @@ def calculate_cooling_data(price: Decimal, user_profile):
             needed = price - available_cash
             t_dynamic = math.ceil(needed / daily_savings)
 
-
     final_days = max(t_static, t_dynamic)
 
     now = timezone.now()
     end_date = now + timedelta(days=final_days)
 
     notification_schedule = []
-
     if final_days > 0:
         for percent in [25, 50, 75, 100]:
             day_offset = math.ceil(final_days * (percent / 100))
@@ -63,10 +64,11 @@ def calculate_cooling_data(price: Decimal, user_profile):
             })
 
     calculation_details = {
-        "price": price,
+        "price": float(price),
         "t_static": t_static,
         "t_dynamic": t_dynamic,
-        "safety_buffer": float(current_savings * Decimal(0.5)),
+        "safety_buffer": float(safety_buffer),
+        "available_cash": float(available_cash),
         "daily_savings": float(monthly_savings / Decimal(30)) if monthly_savings > 0 else 0
     }
 

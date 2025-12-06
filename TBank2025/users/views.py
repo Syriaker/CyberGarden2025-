@@ -11,10 +11,10 @@ class UserAuthView(APIView):
     @extend_schema(
         request=UserProfileSerializer,
         responses={200: UserProfileSerializer},
-        summary="Вход или регистрация по никнейму",
-        description="Если никнейм существует - возвращает профиль. Если нет - создает новый."
+        summary="Вход или регистрация по никнейму"
     )
     def post(self, request):
+        print("ПРИШЛО С ФРОНТА:", request.data)
         data = request.data
         nickname = data.get('nickname')
 
@@ -23,15 +23,41 @@ class UserAuthView(APIView):
                 {"error": "Никнейм обязателен!"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        def get_value(key):
+            val = data.get(key)
+            if val is None or val == "":
+                return 0
+            return float(val)
 
-        user, created = UserProfile.objects.update_or_create(
-            nickname=nickname,
-            defaults={
-                'current_savings': data.get('current_savings', 0),
-                'monthly_savings': data.get('monthly_savings', 0),
-                'monthly_spendings': data.get('monthly_spendings', 0),
-            }
-        )
+        new_savings = get_value('current_savings')
+        new_monthly_save = get_value('monthly_savings')
+        new_monthly_spend = get_value('monthly_spendings')
+
+        user, created = UserProfile.objects.get_or_create(nickname=nickname)
+
+        if created:
+            user.current_savings = new_savings
+            user.monthly_savings = new_monthly_save
+            user.monthly_spendings = new_monthly_spend
+            user.save()
+        else:
+
+            data_changed = False
+
+            if new_savings > 0:
+                user.current_savings = new_savings
+                data_changed = True
+
+            if new_monthly_save > 0:
+                user.monthly_savings = new_monthly_save
+                data_changed = True
+
+            if new_monthly_spend > 0:
+                user.monthly_spendings = new_monthly_spend
+                data_changed = True
+
+            if data_changed:
+                user.save()
 
         serializer = UserProfileSerializer(user)
 

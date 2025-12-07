@@ -171,3 +171,15 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-user-nickname',
 ]
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'robot@rational-assistant.com'
+
+import mimetypes
+mimetypes.add_type("application/font-woff2", ".woff2")
+mimetypes.add_type("application/font-woff", ".woff")
+mimetypes.add_type("application/vnd.ms-fontobject", ".eot")
+mimetypes.add_type("application/x-font-ttf", ".ttf")
+mimetypes.add_type("image/svg+xml", ".svg")
+mimetypes.add_type("text/css", ".css")
+mimetypes.add_type("application/javascript", ".js")

@@ -4,7 +4,20 @@ from datetime import timedelta
 from django.utils import timezone
 
 
-def calculate_cooling_data(price: Decimal, user_profile):
+def calculate_cooling_data(price: Decimal, user_profile, category_name: str = ""):
+    is_banned = False
+    warning_message = None
+
+    if user_profile.blacklisted_categories and category_name:
+        banned_list = [x.strip().lower() for x in user_profile.blacklisted_categories.split(',') if x.strip()]
+        current_cat = category_name.strip().lower()
+
+        for banned in banned_list:
+            if banned and banned in current_cat:
+                is_banned = True
+                warning_message = f"Категория '{category_name}' в вашем черном списке!"
+                print(warning_message)
+                break
 
     if price <= 15000:
         t_static = 1
@@ -37,11 +50,14 @@ def calculate_cooling_data(price: Decimal, user_profile):
 
     final_days = max(t_static, t_dynamic)
 
+    if is_banned:
+        final_days = 9999
+
     now = timezone.now()
     end_date = now + timedelta(days=final_days)
 
     notification_schedule = []
-    if final_days > 0:
+    if final_days > 0 and not is_banned:
         for percent in [25, 50, 75, 100]:
             day_offset = math.ceil(final_days * (percent / 100))
             notify_date = now + timedelta(days=day_offset)
@@ -69,7 +85,9 @@ def calculate_cooling_data(price: Decimal, user_profile):
         "t_dynamic": t_dynamic,
         "safety_buffer": float(safety_buffer),
         "available_cash": float(available_cash),
-        "daily_savings": float(monthly_savings / Decimal(30)) if monthly_savings > 0 else 0
+        "daily_savings": float(monthly_savings / Decimal(30)) if monthly_savings > 0 else 0,
+        "is_banned": is_banned,
+        "warning_message": warning_message
     }
 
     return end_date, final_days, calculation_details, notification_schedule

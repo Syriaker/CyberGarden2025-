@@ -30,6 +30,10 @@ class UserProfile(models.Model):
         verbose_name="Сколько тратит в месяц"
     )
 
+    theme = models.CharField("Тема оформления", max_length=20, default="light", blank=True)
+    blacklisted_categories = models.TextField("Черный список", default="", blank=True)
+    email = models.EmailField("Email", max_length=254, blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

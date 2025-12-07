@@ -4,6 +4,7 @@ from rest_framework import status
 from drf_spectacular.utils import extend_schema
 from .models import UserProfile
 from .serializers import UserProfileSerializer
+from decimal import Decimal
 
 
 class UserAuthView(APIView):
@@ -14,57 +15,42 @@ class UserAuthView(APIView):
         summary="Вход или регистрация по никнейму"
     )
     def post(self, request):
-        print("ПРИШЛО С ФРОНТА:", request.data)
         data = request.data
         nickname = data.get('nickname')
-
         if not nickname:
-            return Response(
-                {"error": "Никнейм обязателен!"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        def get_value(key):
-            val = data.get(key)
-            if val is None or val == "":
-                return 0
-            return float(val)
+            return Response({"error": "No nickname"}, status=400)
 
-        new_savings = get_value('current_savings')
-        new_monthly_save = get_value('monthly_savings')
-        new_monthly_spend = get_value('monthly_spendings')
+        def get_decimal(val):
+            if val is None or val == "": return 0
+            return Decimal(str(val))
 
         user, created = UserProfile.objects.get_or_create(nickname=nickname)
 
-        if created:
-            user.current_savings = new_savings
-            user.monthly_savings = new_monthly_save
-            user.monthly_spendings = new_monthly_spend
-            user.save()
-        else:
+        if 'email' in data:
+            user.email = data['email']
 
-            data_changed = False
+        if 'theme' in data:
+            user.theme = data['theme']
 
-            if new_savings > 0:
-                user.current_savings = new_savings
-                data_changed = True
+        forbidden = data.get('forbidden_categories')
+        if forbidden is not None and isinstance(forbidden, list):
+            user.blacklisted_categories = ", ".join(forbidden)
 
-            if new_monthly_save > 0:
-                user.monthly_savings = new_monthly_save
-                data_changed = True
+        new_cur = get_decimal(data.get('current_savings'))
+        new_save = get_decimal(data.get('monthly_savings'))
+        new_spend = get_decimal(data.get('monthly_spendings'))
 
-            if new_monthly_spend > 0:
-                user.monthly_spendings = new_monthly_spend
-                data_changed = True
+        if created or new_cur > 0: user.current_savings = new_cur
+        if created or new_save > 0: user.monthly_savings = new_save
+        if created or new_spend > 0: user.monthly_spendings = new_spend
 
-            if data_changed:
-                user.save()
+        user.save()
 
         serializer = UserProfileSerializer(user)
-
         return Response({
-            "status": "created" if created else "logged_in",
+            "status": "created" if created else "updated",
             "data": serializer.data
-        }, status=status.HTTP_200_OK)
+        })
 
 
 class UserDetailView(APIView):

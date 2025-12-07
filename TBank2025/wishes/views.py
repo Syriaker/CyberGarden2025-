@@ -135,24 +135,35 @@ class NotificationListView(APIView):
         return Response(serializer.data)
 
 
-class ParseItemView(APIView):
+class ParseUrlSerializer(serializers.Serializer):
+    url = serializers.URLField()
 
+
+class ParseItemView(APIView):
     @extend_schema(
-        request=serializers.Serializer,  # Можно создать inline serializer, но для скорости так
-        responses={200: WishItemSerializer},  # Или просто OpenApiTypes.OBJECT
+        request=ParseUrlSerializer,
+        responses={200: WishItemSerializer},
         summary="Распознать товар по ссылке"
     )
     def post(self, request):
-        url = request.data.get('url')
-        if not url:
-            return Response({"error": "URL is required"}, status=400)
+        # Проверяем через сериализатор (это лучше, чем get)
+        serializer = ParseUrlSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
+        url = serializer.validated_data['url']
+
+        print(f"\n🔍 [PARSER] Пришла ссылка: {url}")
+        print("   [PARSER] Начинаю сканирование...")
 
         data = get_product_info(url)
 
         if data:
+            print(f"✅ [PARSER] Успех! Нашли товар: {data.get('title')}")
             return Response(data)
         else:
+            print(f"⚠️ [PARSER] Не удалось.")
             return Response(
-                {"error": "Не удалось распознать ссылку. Заполните вручную."},
+                {"error": "Не удалось распознать ссылку."},
                 status=400
             )

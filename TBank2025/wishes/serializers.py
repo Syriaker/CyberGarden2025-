@@ -16,7 +16,7 @@ class WishItemSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'price', 'category','status',
             'status_display', 'created_at', 'cooling_end_date', 'days_left',
-            'notify_on_end', 'report_frequency'
+            'notify_on_end', 'report_frequency','image_url'
         ]
         read_only_fields = ['id', 'created_at', 'cooling_end_date', 'days_left']
 

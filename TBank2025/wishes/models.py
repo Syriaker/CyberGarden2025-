@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class WishItem(models.Model):
     STATUS_CHOICES = [
         ('cooling', 'Охлаждение'),
@@ -20,6 +21,9 @@ class WishItem(models.Model):
     price = models.DecimalField("Цена", max_digits=12, decimal_places=2)
     category = models.CharField("Категория", max_length=100, blank=True)
 
+    image_url = models.URLField("Картинка", max_length=500, blank=True, null=True)
+    link_url = models.URLField("Ссылка на товар", max_length=500, blank=True, null=True)
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='cooling')
     created_at = models.DateTimeField(auto_now_add=True)
     cooling_end_date = models.DateTimeField("Дата окончания", null=True, blank=True)
@@ -35,6 +39,7 @@ class WishItem(models.Model):
         verbose_name = "Желание"
         verbose_name_plural = "Желания"
         ordering = ['-created_at']
+
 
 class Notification(models.Model):
     user = models.ForeignKey('users.UserProfile', on_delete=models.CASCADE, related_name='notifications')

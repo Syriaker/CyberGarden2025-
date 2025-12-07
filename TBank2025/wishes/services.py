@@ -4,7 +4,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 
-def calculate_cooling_data(price: Decimal, user_profile, category_name: str = ""):
+def calculate_cooling_data(price: Decimal, user_profile, category_name: str = "", manual_days: int = 0):
     is_banned = False
     warning_message = None
 
@@ -13,10 +13,9 @@ def calculate_cooling_data(price: Decimal, user_profile, category_name: str = ""
         current_cat = category_name.strip().lower()
 
         for banned in banned_list:
-            if banned and banned in current_cat:
+            if banned in current_cat:
                 is_banned = True
                 warning_message = f"Категория '{category_name}' в вашем черном списке!"
-                print(warning_message)
                 break
 
     if price <= 15000:
@@ -30,25 +29,23 @@ def calculate_cooling_data(price: Decimal, user_profile, category_name: str = ""
 
     current_savings = user_profile.current_savings
     monthly_savings = user_profile.monthly_savings
-
-    safety_buffer = current_savings * Decimal(0.5)  # 50%
-    available_cash = current_savings - safety_buffer
-
-    if available_cash < 0:
-        available_cash = Decimal(0)
+    safety_buffer = current_savings * Decimal('0.5')
+    available_cash = max(Decimal(0), current_savings - safety_buffer)
 
     if monthly_savings <= 0:
         t_dynamic = 0
     else:
         daily_savings = monthly_savings / Decimal(30)
-
         if available_cash >= price:
             t_dynamic = 0
         else:
             needed = price - available_cash
             t_dynamic = math.ceil(needed / daily_savings)
 
-    final_days = max(t_static, t_dynamic)
+    if manual_days and manual_days > 0:
+        final_days = manual_days
+    else:
+        final_days = max(t_static, t_dynamic)
 
     if is_banned:
         final_days = 9999
@@ -61,16 +58,7 @@ def calculate_cooling_data(price: Decimal, user_profile, category_name: str = ""
         for percent in [25, 50, 75, 100]:
             day_offset = math.ceil(final_days * (percent / 100))
             notify_date = now + timedelta(days=day_offset)
-
-            msg = ""
-            if percent == 25:
-                msg = "Прошла четверть пути. Ты еще хочешь это?"
-            elif percent == 50:
-                msg = "Половина срока позади. Может, ну его?"
-            elif percent == 75:
-                msg = "Почти у цели. Точно будешь брать?"
-            elif percent == 100:
-                msg = "Срок вышел. Решайся!"
+            msg = f"Напоминание {percent}% срока прошло."
 
             notification_schedule.append({
                 "percent": percent,
@@ -85,9 +73,9 @@ def calculate_cooling_data(price: Decimal, user_profile, category_name: str = ""
         "t_dynamic": t_dynamic,
         "safety_buffer": float(safety_buffer),
         "available_cash": float(available_cash),
-        "daily_savings": float(monthly_savings / Decimal(30)) if monthly_savings > 0 else 0,
         "is_banned": is_banned,
-        "warning_message": warning_message
+        "warning_message": warning_message,
+        "manual_mode": bool(manual_days and manual_days > 0)
     }
 
     return end_date, final_days, calculation_details, notification_schedule

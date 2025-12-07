@@ -64,7 +64,8 @@ class WishListCreateView(APIView):
         if serializer.is_valid():
             price = serializer.validated_data.get('price')
             category = serializer.validated_data.get('category', '')
-            end_date, final_days, details, notifications = calculate_cooling_data(price, user, category)
+            manual_days = serializer.validated_data.pop('manual_days', 0)
+            end_date, final_days, details, notifications = calculate_cooling_data(price, user, category, manual_days)
 
             wish = serializer.save(user=user, cooling_end_date=end_date)
 

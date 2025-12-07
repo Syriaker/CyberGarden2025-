@@ -11,12 +11,15 @@ class WishItemSerializer(serializers.ModelSerializer):
     days_left = serializers.SerializerMethodField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
 
+    manual_days = serializers.IntegerField(write_only=True, required=False, min_value=0)
+
     class Meta:
         model = WishItem
         fields = [
-            'id', 'title', 'price', 'category','status',
-            'status_display', 'created_at', 'cooling_end_date', 'days_left',
-            'notify_on_end', 'report_frequency','image_url'
+            'id', 'title', 'price', 'category',
+            'status', 'status_display', 'created_at', 'cooling_end_date', 'days_left',
+            'notify_on_end', 'report_frequency',
+            'image_url', 'manual_days'
         ]
         read_only_fields = ['id', 'created_at', 'cooling_end_date', 'days_left']
 
